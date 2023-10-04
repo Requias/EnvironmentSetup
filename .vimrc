@@ -1,4 +1,29 @@
 """"""""""""" vim setting
+
+""""""""""""" vim-plug setting
+let data_dir = has('nvim') ? stdpath('data') . '/site' : '~/.vim'
+if empty(glob(data_dir . '/autoload/plug.vim'))
+	silent execute '!curl -fLo '.data_dir.'/autoload/plug.vim --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+endif
+autocmd VimEnter * if len(filter(values(g:plugs), '!isdirectory(v:val.dir)')) | PlugInstall --sync | source $MYVIMRC | endif
+call plug#begin('~/.vim/plugged')
+Plug 'https://github.com/NLKNguyen/papercolor-theme'
+Plug 'https://github.com/yegappan/taglist'
+Plug 'https://github.com/preservim/nerdtree'
+Plug 'https://github.com/wenlongche/SrcExpl'
+Plug 'https://github.com/wenlongche/Trinity'
+Plug 'https://github.com/vim-airline/vim-airline'
+Plug 'https://github.com/vim-airline/vim-airline-themes'
+if has('patch-8.1.2269')
+	Plug 'https://github.com/ycm-core/YouCompleteMe', { 'do': './install.py' }
+else
+	Plug 'https://github.com/ycm-core/YouCompleteMe', { 'branch': 'legacy-py2', 'do': './install.py' }
+endif
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+Plug 'https://github.com/junegunn/fzf.vim'
+call plug#end()
+
+
 " change directory to project root
 exec 'cd' fnameescape(fnamemodify(finddir('.git', escape(expand('%:p:h'), ' ') . ';'), ':h'))
 
@@ -43,6 +68,22 @@ set expandtab
 set softtabstop=4
 set shiftwidth=4
 
+" switch folding method
+function! VimSwitchFoldingMethod()
+	set fdls=99
+	if &foldmethod == "manual"
+		set fdm=syntax
+	elseif &foldmethod == "syntax"
+		set fdm=indent
+		echo "fdm: indent"
+	elseif &foldmethod == "indent"
+		set fdm=syntax
+		echo "fdm: syntax"
+	else
+	endif
+endfunction
+call VimSwitchFoldingMethod()
+
 " keep the last 100 commands
 set history=100
 
@@ -55,10 +96,10 @@ set hidden
 " customize colors
 let colortheme="light"
 let autocolorswitch="true"
-function SetColor(colortheme)
+function! VimSetColor(colortheme)
 	let g:colortheme=a:colortheme
 	if a:colortheme == "light"
-		color PaperColor
+		silent! colo PaperColor
 		set t_Co=256
 		set bg=light
 		hi Search cterm=bold ctermfg=Black ctermbg=227
@@ -68,7 +109,7 @@ function SetColor(colortheme)
 		hi LineNr cterm=bold ctermfg=DarkGray ctermbg=NONE
 		hi CursorLineNr cterm=bold ctermfg=DarkGreen ctermbg=NONE
 	elseif a:colortheme == "dark"
-		color PaperColor
+		silent! colo PaperColor
 		set t_Co=256
 		set bg=dark
 		hi Search cterm=bold ctermfg=White ctermbg=161
@@ -79,25 +120,25 @@ function SetColor(colortheme)
 		hi CursorLineNr cterm=bold ctermfg=Green ctermbg=NONE
 	else
 	endif
-	if exists('*SetAirColor')
-		call SetAirColor(a:colortheme)
+	if exists('*VimSetAirColor')
+		call VimSetAirColor(a:colortheme)
 	endif
 	return
 endfunction
-call SetColor(colortheme)
-function SetAutoColor(autocolorswitch)
+call VimSetColor(colortheme)
+function! VimSetAutoColor(autocolorswitch)
 	let g:autocolorswitch=a:autocolorswitch
 	if a:autocolorswitch == "true"
 		let hour=strftime("%H")
 		if 9 <= hour && hour < 17
-			call SetColor("light")
+			call VimSetColor("light")
 		else
-			call SetColor("dark")
+			call VimSetColor("dark")
 		endif
 	endif
 	return
 endfunction
-call SetAutoColor(autocolorswitch)
+call VimSetAutoColor(autocolorswitch)
 
 " jump to prev/next quickfix list item
 nmap <C-Left> :cp<CR>
@@ -146,6 +187,8 @@ set ut=100
 let g:NERDTreeChDirMode=2
 let NERDTreeIgnore=['\.o$', '\~$']
 let g:NERDTreeWinPos=1
+let NERDTreeNodeDelimiter="\x07"
+let g:NERDTreeGlyphReadOnly="RO"
 nmap <Leader>4 :NERDTreeFind<CR>
 
 
@@ -163,7 +206,7 @@ nmap <C-Down> :cclose<CR>:TrinityUpdateWindow<CR>
 
 
 """"""""""""" airline setting
-function SetAirColor(colortheme)
+function! VimSetAirColor(colortheme)
 	if a:colortheme == "light"
 		let g:airline_theme="papercolor"
 	elseif a:colortheme == "dark"
@@ -175,19 +218,20 @@ function SetAirColor(colortheme)
 	endif
 	return
 endfunction
-call SetAirColor(colortheme)
+call VimSetAirColor(colortheme)
+let g:airline_powerline_fonts=1
 if !exists('g:airline_symbols')
-	let g:airline_symbols = {}
+	let g:airline_symbols={}
 endif
-let g:airline_left_sep = ''
-let g:airline_left_alt_sep = ''
-let g:airline_right_sep = ''
-let g:airline_right_alt_sep = ''
-let g:airline_symbols.branch = ''
-let g:airline_symbols.colnr = ' ℅:'
-let g:airline_symbols.readonly = ''
-let g:airline_symbols.linenr = ' :'
-let g:airline_symbols.maxlinenr = '☰ '
+let g:airline_left_sep=''
+let g:airline_left_alt_sep=''
+let g:airline_right_sep=''
+let g:airline_right_alt_sep=''
+let g:airline_symbols.branch=''
+let g:airline_symbols.colnr=' ℅:'
+let g:airline_symbols.readonly=''
+let g:airline_symbols.linenr=' :'
+let g:airline_symbols.maxlinenr='☰ '
 let g:airline_symbols.dirty=' '
 let g:airline_section_b='%-0.22{getcwd()}'														"display environment status in section B
 let g:airline_section_c='%-0.44F'																"display current file path in section C
@@ -301,6 +345,10 @@ nmap <TAB><Right> <Plug>AirlineSelectNextTab
 let g:airline#extensions#tabline#keymap_ignored_filetypes=['taglist', 'nerdtree', 'srcexpl']	"define the set of filetypes which are ignored for the selectTab keymappings
 let g:airline#extensions#tabline#fnamemod=':t'													"configure the formatting of filenames
 let g:airline#extensions#tabline#show_close_button=1											"configure whether close button should be shown
+
+
+""""""""""""" youcompleteme setting
+let g:ycm_key_list_stop_completion=['<C-y>', '<CR>']
 
 
 """"""""""""" fzf setting
